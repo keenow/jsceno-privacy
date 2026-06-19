@@ -1,0 +1,20 @@
+{
+  "name": "@jsceno/privacy",
+  "version": "0.1.0",
+  "description": "JSCENO 공통 개인정보보호 모듈",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "vitest": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  }
+}
