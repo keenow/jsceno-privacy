@@ -10,11 +10,9 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
-    "vitest": "^2.0.0"
-  },
-  "peerDependencies": {
-    "@supabase/supabase-js": "^2.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0",
+    "@supabase/supabase-js": "^2.108.2"
   }
 }
