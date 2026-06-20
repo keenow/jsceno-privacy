@@ -23,7 +23,7 @@ const DSAR_DUE_DAYS = 10  // 법 제38조: 10일 이내 처리
 export class PrivacyService {
   private db: SupabaseClient
   private key: string
-  private cfg: Required<PrivacyConfig>
+  private cfg: Required<Omit<PrivacyConfig, 'scheduler'>> & { scheduler?: PrivacyConfig['scheduler'] }
 
   constructor(db: SupabaseClient, config: PrivacyConfig) {
     if (!config.encryptionKey) throw new Error('PRIVACY_ENCRYPTION_KEY 필요')
@@ -33,6 +33,7 @@ export class PrivacyService {
       encryptionKey: config.encryptionKey,
       encryptPhone: config.encryptPhone ?? true,
       encryptEmail: config.encryptEmail ?? true,
+      scheduler: config.scheduler,
     }
   }
 
@@ -113,6 +114,20 @@ export class PrivacyService {
       expires_at: expiresAt.toISOString(),
       updated_at: new Date().toISOString(),
     }, { onConflict: 'subject_id' })
+
+    // 스케줌러 주입된 경우 자동 등록
+    if (this.cfg.scheduler) {
+      const notifyAt = this.cfg.scheduler.calcNotifyAt
+        ? this.cfg.scheduler.calcNotifyAt(expiresAt)
+        : (() => { const d = new Date(expiresAt); d.setUTCDate(d.getUTCDate() - 30); d.setUTCHours(2,0,0,0); return d })()
+      await this.cfg.scheduler.register({
+        action: 'privacy-renewal',
+        subjectId: input.subjectId,
+        subjectType: input.subjectType,
+        notifyAt,
+        expiresAt,
+      })
+    }
   }
 
   async getExpired(subjectType?: string): Promise<RetentionRecord[]> {
@@ -147,7 +162,7 @@ export class PrivacyService {
 
   async renewRetention(subjectId: string): Promise<{ newExpiresAt: Date }> {
     const { data: current } = await this.db.from('retention_policies')
-      .select('retention_years')
+      .select('retention_years, subject_type')
       .eq('subject_id', subjectId)
       .single()
 
@@ -159,6 +174,20 @@ export class PrivacyService {
       notified_at: null,
       updated_at: new Date().toISOString(),
     }).eq('subject_id', subjectId)
+
+    // 스케줌러 주입된 경우 자동 갱신
+    if (this.cfg.scheduler) {
+      const notifyAt = this.cfg.scheduler.calcNotifyAt
+        ? this.cfg.scheduler.calcNotifyAt(newExpiresAt)
+        : (() => { const d = new Date(newExpiresAt); d.setUTCDate(d.getUTCDate() - 30); d.setUTCHours(2,0,0,0); return d })()
+      await this.cfg.scheduler.renew({
+        action: 'privacy-renewal',
+        subjectId,
+        subjectType: current?.subject_type,
+        notifyAt,
+        expiresAt: newExpiresAt,
+      })
+    }
 
     return { newExpiresAt }
   }
@@ -202,6 +231,11 @@ export class PrivacyService {
     await this.db.from('retention_policies').update({
       purged_at: new Date().toISOString(),
     }).eq('subject_id', input.recordId)
+
+    // 스케줌러 주입된 경우 자동 취소
+    if (this.cfg.scheduler) {
+      await this.cfg.scheduler.cancel(input.recordId)
+    }
 
     const purgedAt = new Date()
     return { recordId: input.recordId, purgedFields, exemptedFields, purgedAt }

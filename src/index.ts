@@ -20,7 +20,7 @@ export function createPrivacyService(
 export { PrivacyService } from './service'
 export { encrypt, decrypt, isEncrypted, maskPhone, maskEmail, maskRrn, maskAccount } from './encrypt'
 export type {
-  PrivacyConfig,
+  PrivacyConfig, SchedulerAdapter,
   AuditLogInput, AuditLog, AuditFilter,
   RetentionInput, RetentionRecord, NoticeTarget,
   PurgeInput, PurgeResult, BatchPurgeResult,

@@ -4,10 +4,31 @@
 
 // ─── 설정 ──────────────────────────────────────────────────────────────────
 
+// 스케줌러 어댑터 인터페이스 (선택적 주입)
+export interface SchedulerAdapter {
+  register(input: {
+    action: string
+    subjectId: string
+    subjectType?: string
+    notifyAt: Date
+    expiresAt?: Date
+  }): Promise<{ scheduleId: string; nextFireAt: string }>
+  renew(input: {
+    action: string
+    subjectId: string
+    subjectType?: string
+    notifyAt: Date
+    expiresAt?: Date
+  }): Promise<{ scheduleId: string; nextFireAt: string }>
+  cancel(subjectId: string): Promise<void>
+  calcNotifyAt?(expiresAt: Date): Date
+}
+
 export interface PrivacyConfig {
   encryptionKey: string        // PRIVACY_ENCRYPTION_KEY (32바이트 hex)
   encryptPhone?: boolean       // 전화번호 암호화 여부 (기본: true)
   encryptEmail?: boolean       // 이메일 암호화 여부 (기본: true)
+  scheduler?: SchedulerAdapter // 스케줌러 주입 (선택)
 }
 
 // ─── 암호화 ────────────────────────────────────────────────────────────────
